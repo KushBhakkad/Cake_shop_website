@@ -1,9 +1,9 @@
 import express from 'express';
-import bodyParser from 'body-parser';
 import pg from 'pg';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
+import multer from 'multer';
 
 dotenv.config();
 
@@ -23,13 +23,15 @@ const db = new pg.Client({
 
 db.connect();
 
-app.use(express.static('public'));
-app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.static(path.join(__dirname, '/public')));
+const upload = multer();
+app.use(upload.none());
+
 app.set('view engine', 'ejs');
-app.set('views', path.join(__dirname, 'views'));
+app.set('views', path.join(__dirname, '/views'));
 
 app.get('/', (req, res) => {
-  res.render('index.ejs');
+  res.render('index');
 });
 
 app.post('/book-a-table', async (req, res) => {
@@ -42,12 +44,13 @@ app.post('/book-a-table', async (req, res) => {
 
   try {
     await db.query(query, [name, occasion, phone, date, time, size, message]);
-    res.send('Your booking request was sent. We will call back to confirm your Order. Thank you!');
+    res.json({ success: true, message: 'Your booking request was sent. We will call back to confirm your Order. Thank you!' });
   } catch (err) {
     console.error(err);
-    res.send('There was an error processing your request.');
+    res.json({ success: false, message: 'There was an error processing your request.' });
   }
 });
+
 
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
